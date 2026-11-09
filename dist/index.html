@@ -5,93 +5,107 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#101419">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="Un espacio personal para generar tonos estéreo, combinar frecuencias y observar las señales de audio.">
-  <title>REsound · Frecuencias</title>
+  <meta name="description" content="Elige un tono base y una diferencia entre oídos para crear tus propias pruebas de audio binaural.">
+  <title>REsound · Binaural</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <a class="skip-link" href="#experiment">Ir al experimento</a>
+  <a class="skip-link" href="#experiment">Ir a las frecuencias</a>
   <div class="app-shell">
     <header class="app-header">
       <div class="brand" aria-label="REsound">
         <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
         <span><strong>RE</strong>sound</span>
       </div>
-      <span class="header-note">LABORATORIO DE AUDIO</span>
+      <span class="header-note">BINAURAL</span>
     </header>
 
     <main id="experiment">
       <div class="page-heading">
-        <div>
-          <h1>Frecuencias<span class="title-dot" aria-hidden="true">.</span></h1>
-          <p>Tu espacio de experimentación sonora.</p>
-        </div>
-        <div class="channel-key" aria-label="Canales de audio">
-          <span class="channel-tag channel-l">L</span><span class="channel-tag channel-r">R</span>
-        </div>
+        <h1>Binaural<span class="title-dot" aria-hidden="true">.</span></h1>
+        <p>Elige un tono. Cambia la diferencia. Escucha.</p>
       </div>
-
-      <section class="transport-panel" aria-label="Reproducción">
-        <div class="transport-top">
-          <div class="transport-buttons">
-            <button id="play-btn" class="button button-primary" type="button"><span aria-hidden="true">▶</span> Reproducir</button>
-            <button id="stop-btn" class="button button-secondary" type="button" disabled><span aria-hidden="true">■</span> Detener</button>
-          </div>
-          <div class="transport-state">
-            <span id="status" role="status" aria-live="polite">Listo para escuchar</span>
-            <span id="elapsed" class="elapsed" aria-label="Tiempo transcurrido">00:00</span>
-          </div>
-        </div>
-        <div class="transport-settings">
-          <label class="volume-field" for="master-volume">
-            <span class="label-line"><span>Volumen general</span><output id="master-value" for="master-volume">8%</output></span>
-            <input id="master-volume" type="range" min="0" max="1" step="0.01" value="0.08">
-          </label>
-          <label class="field timer-field" for="duration"><span>Duración</span>
-            <select id="duration">
-              <option value="30">30 segundos</option>
-              <option value="60" selected>1 minuto</option>
-              <option value="180">3 minutos</option>
-              <option value="300">5 minutos</option>
-              <option value="600">10 minutos</option>
-              <option value="0">Hasta detener</option>
-            </select>
-          </label>
-        </div>
-        <p class="listening-note">Para separar L/R, usa auriculares y empieza con volumen bajo.</p>
-      </section>
+      <ol class="quick-guide" aria-label="Cómo empezar">
+        <li><span aria-hidden="true">1</span> Auriculares</li>
+        <li><span aria-hidden="true">2</span> Elige tonos</li>
+        <li><span aria-hidden="true">3</span> Reproduce</li>
+      </ol>
 
       <div class="experiment-grid">
-        <section class="editor-panel panel" aria-labelledby="tones-heading">
-          <div class="section-heading">
-            <div><span class="eyebrow">CONFIGURA</span><h2 id="tones-heading">Tus tonos</h2></div>
-            <button id="add-tone" class="button button-quiet" type="button"><span aria-hidden="true">＋</span> Añadir</button>
-          </div>
-          <label class="field preset-field" for="preset-select"><span>Punto de partida</span>
-            <select id="preset-select">
-              <option value="">Personalizado</option>
-              <option value="binaural" selected>200 / 210 Hz</option>
-              <option value="unison">Unísono</option>
-              <option value="fifth">Quinta musical</option>
-            </select>
-          </label>
-          <div id="tone-list" class="tone-list" aria-label="Tonos del experimento"></div>
-          <div class="mode-control">
-            <label class="field" for="mode"><span>Cómo combinarlos</span>
-              <select id="mode">
-                <option value="stereo" selected>L/R separados</option>
-                <option value="sum">Sumar a ambos</option>
-                <option value="multiply">Multiplicar L × R</option>
+        <div class="controls-stack">
+          <section class="editor-panel panel" aria-labelledby="tones-heading">
+            <div class="section-heading">
+              <div><h2 id="tones-heading">Configura tu prueba</h2></div>
+            </div>
+            <label class="field experiment-style-field" for="experiment-style"><span>¿Cómo quieres experimentar?</span>
+              <select id="experiment-style">
+                <option value="binaural" selected>Binaural · ajustar la diferencia</option>
+                <option value="free">Tonos libres · ajustar cada oído</option>
               </select>
             </label>
-            <p id="mode-description" class="field-help">Cada tono se envía al canal que elijas.</p>
-          </div>
-        </section>
+            <div id="binaural-controls" class="binaural-controls">
+              <div class="binaural-grid">
+                <label class="field binaural-value" for="base-frequency"><span>Tono base · Hz</span><input id="base-frequency" type="number" min="0" step="any" inputmode="decimal" value="200"></label>
+                <label class="field binaural-value" for="beat-frequency"><span>Diferencia entre oídos · Hz</span><input id="beat-frequency" type="number" step="any" inputmode="decimal" value="10"></label>
+              </div>
+              <output id="binaural-result" class="binaural-result" for="base-frequency beat-frequency" aria-live="polite">L 200 Hz · R 210 Hz</output>
+              <p class="field-help channel-help">L es tu oído izquierdo. R es tu oído derecho.</p>
+            </div>
+            <div id="free-tone-controls" hidden>
+            <label class="field preset-field" for="preset-select"><span>Empezar con…</span>
+              <select id="preset-select">
+                <option value="">Mi combinación</option>
+                <option value="binaural" selected>Dos tonos · 200 / 210 Hz</option>
+                <option value="unison">Mismo tono · 220 / 220 Hz</option>
+                <option value="fifth">Quinta musical · 220 / 330 Hz</option>
+              </select>
+            </label>
+            <div id="tone-list" class="tone-list" aria-label="Tonos del experimento"></div>
+            <details class="sound-settings">
+              <summary><span>Ajustes de sonido</span><span class="summary-hint">Mezcla y más tonos</span></summary>
+              <div class="settings-content">
+                <label class="field" for="mode"><span>Cómo combinarlos</span>
+                  <select id="mode">
+                    <option value="stereo" selected>Un tono por oído · L / R</option>
+                    <option value="sum">Sumar y escuchar en ambos</option>
+                    <option value="multiply">Multiplicar L × R</option>
+                  </select>
+                </label>
+                <p id="mode-description" class="field-help">Cada tono se envía al oído que elijas.</p>
+                <button id="add-tone" class="button button-secondary add-tone-button" type="button"><span aria-hidden="true">＋</span> Añadir otro tono</button>
+              </div>
+            </details>
+            </div>
+          </section>
+
+          <section class="listening-panel panel" aria-labelledby="listening-heading">
+            <div class="section-heading"><h2 id="listening-heading">A tu ritmo</h2></div>
+            <div class="listening-settings">
+              <label class="volume-field" for="master-volume">
+                <span class="label-line"><span>Volumen</span><output id="master-value" for="master-volume">8%</output></span>
+                <input id="master-volume" type="range" min="0" max="1" step="0.01" value="0.08">
+              </label>
+              <label class="field timer-field" for="duration"><span>¿Durante cuánto tiempo?</span>
+                <select id="duration">
+                  <option value="30">30 segundos</option>
+                  <option value="60" selected>1 minuto</option>
+                  <option value="180">3 minutos</option>
+                  <option value="300">5 minutos</option>
+                  <option value="600">10 minutos</option>
+                  <option value="1200">20 minutos</option>
+                  <option value="1800">30 minutos</option>
+                  <option value="0">Hasta que yo lo detenga</option>
+                </select>
+              </label>
+            </div>
+            <p class="listening-note">Empieza con volumen bajo. Los auriculares mantienen separados los canales L y R.</p>
+          </section>
+        </div>
 
         <div class="analysis-stack">
           <section class="panel graph-panel" aria-labelledby="wave-heading">
             <div class="section-heading graph-heading">
-              <div><span class="eyebrow">OBSERVA</span><h2 id="wave-heading">Onda de salida</h2></div>
+              <div><h2 id="wave-heading">Así se ve tu sonido</h2><p class="section-description">La onda cambia junto con tus tonos.</p></div>
               <label class="window-field" for="time-window"><span class="sr-only">Ventana de tiempo</span>
                 <select id="time-window" aria-label="Ventana de tiempo">
                   <option value="0.02">20 ms</option>
@@ -102,13 +116,13 @@
               </label>
             </div>
             <div class="chart-legend"><span><i class="legend-line left-line" aria-hidden="true"></i>Izquierda · L</span><span><i class="legend-line right-line" aria-hidden="true"></i>Derecha · R</span></div>
-            <div class="canvas-wrap"><canvas id="waveform" role="img" aria-label="Amplitud de las señales izquierda y derecha en el tiempo">La descripción de los componentes de audio aparece debajo del espectro.</canvas></div>
+            <div class="canvas-wrap"><canvas id="waveform" role="img" aria-label="Amplitud de las señales izquierda y derecha en el tiempo">La descripción de las frecuencias aparece debajo de la gráfica siguiente.</canvas></div>
             <p id="beat-info" class="beat-info" aria-live="polite">Diferencia entre tonos: 10 Hz</p>
           </section>
 
           <section class="panel graph-panel" aria-labelledby="spectrum-heading">
-            <div class="section-heading">
-              <div><h2 id="spectrum-heading">Frecuencias presentes</h2><p class="graph-subtitle">Espectro ideal calculado</p></div>
+            <div class="section-heading spectrum-heading">
+              <div><h2 id="spectrum-heading">Qué frecuencias salen</h2><p class="graph-subtitle">Espectro ideal calculado</p></div>
               <div id="spectrum-summary" class="spectrum-summary" aria-live="polite">2 frecuencias</div>
             </div>
             <div class="canvas-wrap spectrum-wrap"><canvas id="spectrum" role="img" aria-label="Frecuencias y amplitudes presentes en la señal generada">La lista de frecuencias aparece debajo de la gráfica.</canvas></div>
@@ -118,14 +132,14 @@
       </div>
 
       <details class="session-panel panel">
-        <summary><span><span class="eyebrow">CONSERVA</span><span class="session-title">Tu sesión</span></span><span class="session-hint">Guardar y comparar</span></summary>
+        <summary><span><span class="session-title">Mis pruebas</span><span class="summary-caption">Guarda tus tonos y lo que observas</span></span></summary>
         <div class="session-content">
           <div class="session-fields">
-            <label class="field" for="session-name"><span>Nombre de la prueba</span><input id="session-name" type="text" maxlength="80" value="Mi prueba" autocomplete="off"></label>
-            <label class="field" for="session-notes"><span>Tus observaciones <span class="muted">· opcional</span></span><textarea id="session-notes" rows="3" maxlength="4000" placeholder="¿Qué notaste al cambiar los tonos?"></textarea></label>
+            <label class="field" for="session-name"><span>Nombre de la prueba</span><input id="session-name" type="text" maxlength="80" value="Mi prueba" autocomplete="off" placeholder="Por ejemplo: tonos de hoy"></label>
+            <label class="field" for="session-notes"><span>¿Qué notaste? <span class="muted">· opcional</span></span><textarea id="session-notes" rows="3" maxlength="4000" placeholder="Anota lo que percibiste para compararlo después."></textarea></label>
           </div>
           <div class="session-actions">
-            <button id="save-session" class="button button-primary" type="button">Guardar sesión</button>
+            <button id="save-session" class="button button-primary" type="button">Guardar prueba</button>
             <button id="export-session" class="button button-secondary" type="button">Exportar</button>
             <button id="import-session" class="button button-secondary" type="button">Importar</button>
             <input id="import-file" type="file" accept="application/json,.json" hidden>
@@ -135,8 +149,19 @@
       </details>
     </main>
 
-    <footer class="app-footer"><span><strong>RE</strong>sound</span><p>Señales de audio. No mide actividad cerebral.</p></footer>
+    <footer class="app-footer"><span><strong>RE</strong>sound</span><p>Las gráficas muestran audio, no actividad cerebral.</p></footer>
   </div>
+
+  <section class="transport-panel" aria-label="Reproducción">
+    <div class="transport-state">
+      <span id="status" role="status" aria-live="polite">Listo para escuchar</span>
+      <span id="elapsed" class="elapsed" aria-label="Tiempo transcurrido">00:00</span>
+    </div>
+    <div class="transport-buttons">
+      <button id="play-btn" class="button button-primary" type="button"><span aria-hidden="true">▶</span> Reproducir</button>
+      <button id="stop-btn" class="button button-secondary" type="button" disabled><span aria-hidden="true">■</span> Detener</button>
+    </div>
+  </section>
   <script type="module" src="./app.mjs"></script>
 </body>
 </html>

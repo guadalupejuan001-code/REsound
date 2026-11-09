@@ -1,16 +1,18 @@
 import { analyze, validate } from './audio-core.mjs';
 import { AudioEngine } from './audio-engine.mjs';
 import { drawWaveform, drawSpectrum, number } from './charts.mjs';
+import { binauralTones, inferBinaural } from './binaural.mjs';
 
 const $ = id => document.getElementById(id);
 const ACTIVE_KEY = 'resound-frecuencias-current-v1';
 const SESSIONS_KEY = 'resound-frecuencias-sessions-v1';
-const allowedDurations = [0, 30, 60, 180, 300, 600];
+const allowedDurations = [0, 30, 60, 180, 300, 600, 1200, 1800];
 const allowedWindows = [0.02, 0.1, 0.5, 1];
 let nextId = 1;
 const makeTone = (frequency, channel) => ({ id: `tone-${nextId++}`, frequency, channel, gain: 1, phase: 0, enabled: true });
 let state = {
-  mode: 'stereo', tones: [makeTone(200, 'L'), makeTone(210, 'R')],
+  mode: 'stereo', tones: binauralTones(200, 10),
+  experimentStyle: 'binaural', baseFrequency: 200, beatFrequency: 10, freeConfiguration: null,
   masterVolume: 0.08, duration: 60, timeWindow: 0.1,
   sessionName: 'Mi prueba', sessionNotes: '',
 };
@@ -20,11 +22,14 @@ let changeTimer;
 let starting = false;
 let graphHint;
 const engine = new AudioEngine(message => {
+  try { globalThis.REsoundAndroid?.abandonAudioFocus(); } catch {}
   $('play-btn').disabled = false;
   $('stop-btn').disabled = true;
   $('elapsed').textContent = '00:00';
   setStatus(message);
 });
+// Only the trusted packaged Android Activity uses this lifecycle endpoint.
+globalThis.REsoundApp = Object.freeze({ stop: message => engine.stop(message || 'Detenido') });
 
 function setStatus(message, error = false) {
   $('status').textContent = message;
@@ -38,12 +43,25 @@ function unpack(raw) {
   const validation = validate(input);
   if (!validation.ok) throw new Error(validation.errors.map(error => error.message).join(' '));
   if (validation.config.tones.some(tone => tone.gain > 1)) throw new Error('Los niveles de una sesión deben estar entre 0 y 1.');
-  return {
+  const restoreTone = ({ frequency, channel, gain, phase, enabled }) => ({
+    id: `tone-${nextId++}`, frequency, channel, gain, phase, enabled,
+  });
+  const inferred = inferBinaural(validation.config);
+  const automatic = input.experimentStyle === 'binaural' || (!input.experimentStyle && Boolean(inferred));
+  const baseFrequency = Number.isFinite(input.baseFrequency) ? input.baseFrequency : inferred?.baseFrequency ?? 200;
+  const beatFrequency = Number.isFinite(input.beatFrequency) ? input.beatFrequency : inferred?.beatFrequency ?? 10;
+  let freeConfiguration = null;
+  if (input.freeConfiguration) {
+    const freeValidation = validate(input.freeConfiguration);
+    if (freeValidation.ok) {
+      if (freeValidation.config.tones.some(tone => tone.gain > 1)) throw new Error('Los niveles de los tonos libres deben estar entre 0 y 1.');
+      freeConfiguration = { mode: freeValidation.config.mode, tones: freeValidation.config.tones.map(restoreTone) };
+    }
+  }
+  const loaded = {
     mode: validation.config.mode,
-    tones: validation.config.tones.map(tone => ({
-      id: `tone-${nextId++}`, frequency: Number(tone.frequency), channel: tone.channel,
-      gain: Number(tone.gain ?? 1), phase: Number(tone.phase ?? 0), enabled: tone.enabled !== false,
-    })),
+    experimentStyle: automatic ? 'binaural' : 'free', baseFrequency, beatFrequency, freeConfiguration,
+    tones: validation.config.tones.map(restoreTone),
     // Reopening or importing a configuration never restores a high volume.
     masterVolume: 0.08,
     duration: allowedDurations.includes(Number(input.duration)) ? Number(input.duration) : 60,
@@ -51,6 +69,8 @@ function unpack(raw) {
     sessionName: String(input.sessionName ?? raw.name ?? 'Mi prueba').slice(0, 80),
     sessionNotes: String(input.sessionNotes ?? '').slice(0, 4000),
   };
+  if (automatic) { loaded.mode = 'stereo'; loaded.tones = binauralTones(baseFrequency, beatFrequency); }
+  return loaded;
 }
 
 function persist() {
@@ -94,7 +114,6 @@ function renderTones() {
     const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'tone-remove';
     remove.textContent = 'Quitar'; remove.dataset.remove = index; remove.setAttribute('aria-label', `Quitar tono ${index + 1}`);
     header.append(enableLabel, channelTag, remove);
-    const fields = document.createElement('div'); fields.className = 'tone-controls';
     const frequency = numericInput(tone.frequency, 'frequency', index, { min: '0' });
     frequency.setAttribute('aria-label', `Frecuencia tono ${index + 1} (Hz)`);
     const channel = document.createElement('select'); channel.dataset.field = 'channel'; channel.dataset.index = index;
@@ -110,8 +129,13 @@ function renderTones() {
     gain.setAttribute('aria-label', `Nivel tono ${index + 1}`);
     const gainField = labelField(`Nivel · ${Math.round(tone.gain * 100)}%`, gain);
     gainField.querySelector('span').dataset.gainLabel = index;
-    fields.append(labelField('Frecuencia · Hz', frequency), labelField('Canal', channel), labelField('Fase · grados', phase), gainField);
-    row.append(header, fields); list.append(row);
+    const frequencyField = labelField('Frecuencia · Hz', frequency); frequencyField.classList.add('tone-frequency');
+    const details = document.createElement('details'); details.className = 'tone-advanced';
+    const summary = document.createElement('summary'); summary.textContent = 'Ajustar este tono';
+    const extra = document.createElement('div'); extra.className = 'tone-extra-controls';
+    extra.append(labelField('Canal', channel), labelField('Fase · grados', phase), gainField);
+    details.append(summary, extra);
+    row.append(header, frequencyField, details); list.append(row);
   });
   if (!state.tones.length) {
     const empty = document.createElement('p'); empty.className = 'field-help'; empty.textContent = 'Añade un tono para empezar.'; list.append(empty);
@@ -119,6 +143,11 @@ function renderTones() {
 }
 
 function renderControls() {
+  $('experiment-style').value = state.experimentStyle;
+  $('base-frequency').value = state.baseFrequency;
+  $('beat-frequency').value = state.beatFrequency;
+  $('binaural-controls').hidden = state.experimentStyle !== 'binaural';
+  $('free-tone-controls').hidden = state.experimentStyle === 'binaural';
   $('mode').value = state.mode;
   $('master-volume').value = state.masterVolume;
   $('master-value').textContent = `${Math.round(state.masterVolume * 100)}%`;
@@ -159,6 +188,18 @@ function draw() {
 }
 
 function updateAnalysis(updateAudio = true) {
+  if (state.experimentStyle === 'binaural') {
+    try {
+      state.tones = binauralTones(state.baseFrequency, state.beatFrequency);
+      state.mode = 'stereo';
+      $('binaural-result').textContent = `L ${number(state.tones[0].frequency)} Hz · R ${number(state.tones[1].frequency)} Hz`;
+    } catch (error) {
+      engine.stop(); $('play-btn').disabled = true;
+      $('binaural-result').textContent = 'Completa el tono base y la diferencia.';
+      $('spectrum-summary').textContent = 'Revisa los valores';
+      setStatus(error.message, true); return;
+    }
+  }
   const validation = validate(state);
   if (!validation.ok) {
     engine.stop();
@@ -178,7 +219,9 @@ function updateAnalysis(updateAudio = true) {
   const active = state.tones.filter(tone => tone.enabled && tone.gain > 0 && tone.frequency > 0);
   if (active.length === 2) {
     const delta = Math.abs(active[0].frequency - active[1].frequency);
-    $('beat-info').textContent = `Diferencia de entrada: ${number(delta)} Hz${state.mode === 'multiply' ? ' · consulta las frecuencias generadas abajo.' : ' · no se cuenta como un tono añadido.'}`;
+    $('beat-info').textContent = state.experimentStyle === 'binaural'
+      ? `Diferencia L/R: ${number(delta)} Hz · un tono independiente en cada oído.`
+      : `Diferencia de entrada: ${number(delta)} Hz${state.mode === 'multiply' ? ' · consulta las frecuencias generadas abajo.' : ' · no se cuenta como un tono añadido.'}`;
   } else {
     const pairs = active.length * (active.length - 1) / 2;
     const differences = [...new Set(active.flatMap((tone, i) => active.slice(i + 1).map(other => Math.abs(tone.frequency - other.frequency))))].sort((a, b) => a - b);
@@ -197,6 +240,22 @@ function updateAnalysis(updateAudio = true) {
 function queueUpdate() {
   clearTimeout(changeTimer);
   changeTimer = setTimeout(() => updateAnalysis(), 70);
+}
+
+$('experiment-style').addEventListener('change', event => {
+  clearTimeout(changeTimer);
+  if (state.experimentStyle === 'free') state.freeConfiguration = { mode: state.mode, tones: structuredClone(state.tones) };
+  state.experimentStyle = event.target.value;
+  if (state.experimentStyle === 'free' && state.freeConfiguration) {
+    state.mode = state.freeConfiguration.mode; state.tones = structuredClone(state.freeConfiguration.tones);
+  }
+  renderControls(); updateAnalysis();
+});
+for (const [id, property] of [['base-frequency', 'baseFrequency'], ['beat-frequency', 'beatFrequency']]) {
+  $(id).addEventListener('input', event => {
+    state[property] = event.target.value === '' ? NaN : Number(event.target.value);
+    queueUpdate();
+  });
 }
 
 $('tone-list').addEventListener('input', event => {
@@ -244,8 +303,9 @@ $('play-btn').addEventListener('click', async () => {
   starting = true; $('play-btn').disabled = true; $('stop-btn').disabled = false;
   setStatus('Iniciando audio…');
   try {
+    if (globalThis.REsoundAndroid && !globalThis.REsoundAndroid.requestAudioFocus()) throw new Error('Android no pudo iniciar el audio. Vuelve a pulsar Reproducir.');
     await engine.start(state, state.masterVolume, state.duration);
-    if (engine.running) setStatus(`Reproduciendo · ${number(engine.context.sampleRate)} muestras/s`);
+    if (engine.running) setStatus(state.experimentStyle === 'binaural' ? 'Reproduciendo · L/R separados' : 'Reproduciendo');
   } catch (error) { engine.stop(); setStatus(error.message, true); }
   finally { starting = false; $('play-btn').disabled = engine.running; $('stop-btn').disabled = !engine.running; }
 });
@@ -270,7 +330,7 @@ for (const [id, field] of [['session-name', 'sessionName'], ['session-notes', 's
 function renderSessions() {
   const list = $('saved-sessions'); list.replaceChildren();
   if (!sessions.length) {
-    const empty = document.createElement('p'); empty.textContent = 'Las sesiones se guardan en este navegador. Exporta para conservar una copia.'; list.append(empty); return;
+    const empty = document.createElement('p'); empty.textContent = globalThis.REsoundAndroid ? 'Tus pruebas se guardan en este teléfono. Exporta para conservar una copia.' : 'Tus pruebas se guardan en este navegador. Exporta para conservar una copia.'; list.append(empty); return;
   }
   sessions.forEach((session, index) => {
     const row = document.createElement('div'); row.className = 'saved-session';
@@ -294,12 +354,17 @@ function renderSessions() {
 }
 
 function snapshot() {
-  const validation = validate(state);
+  const configuration = structuredClone(state);
+  if (configuration.experimentStyle === 'binaural') {
+    configuration.mode = 'stereo';
+    configuration.tones = binauralTones(configuration.baseFrequency, configuration.beatFrequency);
+  }
+  const validation = validate(configuration);
   if (!validation.ok) throw new Error('Corrige las frecuencias antes de guardar la sesión.');
   return {
     format: 'resound-frecuencias', version: 1,
     name: state.sessionName.trim() || 'Mi prueba', savedAt: new Date().toISOString(),
-    configuration: structuredClone(state),
+    configuration,
   };
 }
 $('save-session').addEventListener('click', () => {
@@ -307,28 +372,48 @@ $('save-session').addEventListener('click', () => {
     const record = snapshot();
     const next = [record, ...sessions];
     localStorage.setItem(SESSIONS_KEY, JSON.stringify(next)); sessions = next; renderSessions();
-    setStatus('Sesión guardada en este navegador.');
-  } catch (error) { setStatus(`No se pudo guardar: ${error.message}. Puedes exportar una copia.`, true); }
+    setStatus(globalThis.REsoundAndroid ? 'Prueba guardada en el teléfono.' : 'Prueba guardada en este navegador.');
+  } catch (error) { setStatus(`No se pudo guardar: ${error.message}`, true); }
 });
 $('export-session').addEventListener('click', () => {
   try {
     const data = snapshot();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const json = JSON.stringify(data, null, 2);
+    const fileName = `resound-${data.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').slice(0, 48) || 'sesion'}.json`;
+    if (globalThis.REsoundAndroid) { globalThis.REsoundAndroid.exportSession(fileName, json); setStatus('Elige dónde guardar la prueba.'); return; }
+    const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob); const link = document.createElement('a');
-    link.href = url; link.download = `resound-${data.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').slice(0, 48) || 'sesion'}.json`;
+    link.href = url; link.download = fileName;
     document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000);
     setStatus('Copia JSON preparada para descargar.');
   } catch (error) { setStatus(error.message, true); }
 });
-$('import-session').addEventListener('click', () => $('import-file').click());
+function importJSON(json) {
+  if (new TextEncoder().encode(json).length > 2_000_000) throw new Error('El archivo es demasiado grande para una prueba de tonos.');
+  const data = JSON.parse(json);
+  if (data.format !== 'resound-frecuencias' || data.version !== 1) throw new Error('Selecciona una prueba JSON exportada por REsound.');
+  const imported = unpack(data); engine.stop(); state = imported; renderControls(); updateAnalysis(false);
+  setStatus('Prueba importada · volumen 8%');
+}
+$('import-session').addEventListener('click', () => {
+  if (globalThis.REsoundAndroid) globalThis.REsoundAndroid.importSession();
+  else $('import-file').click();
+});
+globalThis.addEventListener('resound-native-import', event => {
+  try {
+    if (event.detail?.error) throw new Error(event.detail.error);
+    if (typeof event.detail?.json !== 'string') throw new Error('No se recibió el archivo.');
+    importJSON(event.detail.json);
+  } catch (error) { setStatus(`No se pudo importar: ${error.message}`, true); }
+});
+globalThis.addEventListener('resound-native-export', event => {
+  setStatus(event.detail?.error ? `No se pudo exportar: ${event.detail.error}` : 'Prueba exportada.', Boolean(event.detail?.error));
+});
 $('import-file').addEventListener('change', async event => {
   const file = event.target.files?.[0]; if (!file) return;
   try {
     if (file.size > 2_000_000) throw new Error('El archivo es demasiado grande para una sesión de tonos.');
-    const data = JSON.parse(await file.text());
-    if (data.format !== 'resound-frecuencias' || data.version !== 1) throw new Error('Selecciona una sesión JSON exportada por REsound Frecuencias.');
-    const imported = unpack(data); engine.stop(); state = imported; renderControls(); updateAnalysis(false);
-    setStatus('Sesión importada · volumen 8%');
+    importJSON(await file.text());
   } catch (error) { setStatus(`No se pudo importar: ${error.message}`, true); }
   event.target.value = '';
 });

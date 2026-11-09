@@ -3,3 +3,11 @@ node_modules/
 *.tgz
 .DS_Store
 qa-results.json
+android/build/
+android/app/src/main/assets/
+*.apk
+*.idsig
+*.jks
+*.keystore
+*.p12
+signing/
