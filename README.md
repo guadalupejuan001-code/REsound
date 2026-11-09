@@ -1,10 +1,10 @@
 # REsound · Binaural
 
-Una herramienta de la línea de productos **REsound** para crear pruebas de audio binaural, experimentar con tonos y observar sus combinaciones. La versión 0.2.1 incorpora una APK Android autónoma, explicaciones dentro de la interfaz y controles de **tono base + diferencia entre oídos**. Funciona sin conexión y conserva las pruebas en el dispositivo.
+Una herramienta de la línea de productos **REsound** para crear pruebas de audio binaural, experimentar con tonos y observar sus combinaciones. La versión 0.3.0 renueva la interfaz, el icono y la reproducción Android: el audio se genera en un **servicio nativo de media playback**, por lo que puede continuar al salir de la interfaz o apagar la pantalla. Funciona sin conexión y conserva las pruebas en el dispositivo.
 
 ## Android
 
-La APK se llama `REsound-Binaural-0.2.1.apk`, con paquete `com.resound.frequencies`. Requiere Android 8.0 o posterior y un Android System WebView actualizado. Todo el código de la interfaz está incorporado en la APK; no necesita iniciar sesión ni abrir una web. Conserva la firma de 0.2.0 para instalar como actualización y mantener los datos de la app.
+La APK se llama `REsound-0.3.0.apk`, con paquete `com.resound.frequencies`. Requiere Android 8.0 o posterior y un Android System WebView actualizado. Todo el código de la interfaz está incorporado en la APK; no necesita iniciar sesión ni abrir una web.
 
 1. Conecta auriculares estéreo.
 2. Escribe el **tono base**, que se envía al oído izquierdo, y la **diferencia**, que se añade para obtener el tono derecho. Por ejemplo, 200 y 10 producen L 200 Hz / R 210 Hz.
@@ -13,9 +13,18 @@ La APK se llama `REsound-Binaural-0.2.1.apk`, con paquete `com.resound.frequenci
 
 **Tonos libres** permite ajustar cada tono, el canal, la fase y el nivel. Conserva su configuración al pasar al modo binaural y volver. La herramienta es un generador propio para experimentos binaurales; no incluye grabaciones ni programas de Hemi-Sync.
 
-La pantalla permanece encendida durante la prueba. Salir de la aplicación, bloquear el teléfono, perder el foco de audio o desconectar auriculares detiene la reproducción. No hay reproducción en segundo plano en esta versión.
+En Android, la reproducción se ejecuta fuera de la Activity mediante `PlaybackService`. Salir de REsound, cambiar de aplicación, apagar la pantalla o retirar la tarea de recientes no detiene por sí solo una sesión activa. Una notificación persistente permite **Pausar / Reanudar / Detener**. Una pérdida permanente de foco de audio detiene la sesión; desconectar auriculares la pausa para evitar que el estímulo salte al altavoz. Forzar la detención de la app desde Android sí termina el servicio.
 
 Consulta [android/README.md](android/README.md) para compilar y firmar la APK. Las claves de firma se conservan fuera del repositorio.
+
+## REsound 0.3
+
+- Interfaz visual renovada con tarjetas, iconos, señalización L/R y un estado explícito de segundo plano.
+- Nuevo icono de launcher y nuevo icono monocromo para la notificación.
+- El motor web sigue calculando el espectro exacto; en Android transmite esas componentes al renderizador PCM nativo.
+- Audio estéreo PCM a 48 kHz mediante `AudioTrack`, con foco de audio, pausa/reanudación y `PARTIAL_WAKE_LOCK`.
+- El servicio se declara como `foregroundServiceType="mediaPlayback"`, conforme al modelo de reproducción en segundo plano de Android moderno.
+- La versión web conserva Web Audio; el cambio nativo se activa solo dentro de la APK.
 
 ## Entender los controles
 
