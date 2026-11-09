@@ -92,6 +92,12 @@ function labelField(text, element) {
   label.append(span, element); return label;
 }
 
+function fieldHelp(field, control, id, text) {
+  const hint = document.createElement('small'); hint.className = 'field-help'; hint.id = id;
+  hint.textContent = text; control.setAttribute('aria-describedby', id); field.append(hint);
+  return field;
+}
+
 function numericInput(value, field, index, constraints = {}) {
   const input = document.createElement('input'); input.type = 'number';
   input.value = value; input.step = 'any'; input.inputMode = 'decimal';
@@ -127,13 +133,18 @@ function renderTones() {
     const gain = document.createElement('input'); gain.type = 'range'; gain.min = 0; gain.max = 1; gain.step = 0.01;
     gain.value = tone.gain; gain.dataset.index = index; gain.dataset.field = 'gain';
     gain.setAttribute('aria-label', `Nivel tono ${index + 1}`);
-    const gainField = labelField(`Nivel · ${Math.round(tone.gain * 100)}%`, gain);
+    const gainField = fieldHelp(labelField(`Nivel · ${Math.round(tone.gain * 100)}%`, gain), gain,
+      `tone-${index}-gain-help`, 'Peso de este tono en la mezcla. 0% lo silencia; el volumen general controla toda la salida.');
     gainField.querySelector('span').dataset.gainLabel = index;
     const frequencyField = labelField('Frecuencia · Hz', frequency); frequencyField.classList.add('tone-frequency');
     const details = document.createElement('details'); details.className = 'tone-advanced';
     const summary = document.createElement('summary'); summary.textContent = 'Ajustar este tono';
     const extra = document.createElement('div'); extra.className = 'tone-extra-controls';
-    extra.append(labelField('Canal', channel), labelField('Fase · grados', phase), gainField);
+    extra.append(
+      fieldHelp(labelField('Canal', channel), channel, `tone-${index}-channel-help`, 'L = oído izquierdo; R = oído derecho. En Sumar o Multiplicar, el resultado llega a ambos.'),
+      fieldHelp(labelField('Fase · grados', phase), phase, `tone-${index}-phase-help`, 'Desplaza el ciclo de la onda, no sus Hz. 360° vuelve al inicio. Al sumar tonos iguales, 180° puede hacer que se resten.'),
+      gainField,
+    );
     details.append(summary, extra);
     row.append(header, frequencyField, details); list.append(row);
   });
@@ -187,6 +198,32 @@ function draw() {
   drawSpectrum($('spectrum'), analysis);
 }
 
+function explainCurrentAudio(count) {
+  if (state.experimentStyle === 'binaural') {
+    const left = state.tones[0].frequency, right = state.tones[1].frequency;
+    const difference = state.beatFrequency, separation = Math.abs(difference);
+    const equation = `Derecho = ${number(left)} ${difference < 0 ? '−' : '+'} ${number(separation)} = ${number(right)} Hz. Izquierdo = ${number(left)} Hz.`;
+    let meaning;
+    if (left === 0 || right === 0) {
+      meaning = '0 Hz no oscila: ese canal queda en silencio en este modo. Para comparar dos tonos, usa frecuencias mayores que 0 en ambos oídos.';
+    } else if (left === right) {
+      meaning = difference === 0
+        ? 'Ambos oídos reciben el mismo tono. Sigue habiendo sonido: hay una frecuencia distinta en dos canales, sin diferencia entre ellos.'
+        : 'La diferencia escrita es demasiado pequeña para representarse con esta base: el redondeo deja ambos tonos iguales.';
+    } else {
+      meaning = `El derecho es ${number(separation)} Hz más ${difference < 0 ? 'grave' : 'agudo'}. Esa separación no añade un tercer tono de ${number(separation)} Hz.`;
+    }
+    $('binaural-explanation').textContent = `${equation} ${meaning}`;
+  }
+  const countText = count === 1 ? '1 frecuencia distinta' : `${count} frecuencias distintas`;
+  const modes = {
+    stereo: 'Cada canal conserva sus propios tonos. La misma frecuencia en L y R se cuenta una sola vez.',
+    sum: 'Ambos oídos reciben la misma mezcla. Sumar no crea frecuencias nuevas; tonos iguales pueden reforzarse o cancelarse según su fase.',
+    multiply: 'La multiplicación puede crear frecuencias de suma y diferencia entre los tonos L/R. Los resultados coincidentes se combinan; una parte constante de 0 Hz se muestra aparte.',
+  };
+  $('experiment-explanation').textContent = `${countText} en la salida. ${modes[state.mode]}`;
+}
+
 function updateAnalysis(updateAudio = true) {
   if (state.experimentStyle === 'binaural') {
     try {
@@ -196,6 +233,8 @@ function updateAnalysis(updateAudio = true) {
     } catch (error) {
       engine.stop(); $('play-btn').disabled = true;
       $('binaural-result').textContent = 'Completa el tono base y la diferencia.';
+      $('binaural-explanation').textContent = 'La app necesita dos resultados válidos: izquierdo = base; derecho = base + diferencia. Ninguno puede ser negativo.';
+      $('experiment-explanation').textContent = 'Las gráficas conservan la última configuración válida hasta que completes estos valores.';
       $('spectrum-summary').textContent = 'Revisa los valores';
       setStatus(error.message, true); return;
     }
@@ -206,6 +245,7 @@ function updateAnalysis(updateAudio = true) {
     $('play-btn').disabled = true;
     setStatus(validation.errors.map(error => error.message).join(' '), true);
     $('spectrum-summary').textContent = 'Revisa los valores';
+    $('experiment-explanation').textContent = 'Las gráficas conservan la última configuración válida. Corrige los tonos para volver a calcular la salida.';
     return;
   }
   analysis = analyze(state);
@@ -216,6 +256,7 @@ function updateAnalysis(updateAudio = true) {
   }[state.mode];
   const count = new Set([...analysis.left, ...analysis.right].map(p => p.frequency)).size;
   $('spectrum-summary').textContent = `${count} ${count === 1 ? 'frecuencia' : 'frecuencias'}`;
+  explainCurrentAudio(count);
   const active = state.tones.filter(tone => tone.enabled && tone.gain > 0 && tone.frequency > 0);
   if (active.length === 2) {
     const delta = Math.abs(active[0].frequency - active[1].frequency);

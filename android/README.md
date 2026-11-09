@@ -1,6 +1,6 @@
 # REsound Binaural para Android
 
-Aplicación local `com.resound.frequencies`, versión 0.2.0 (código 2), Android 8.0 o posterior. El APK incorpora los archivos de `dist/`; no necesita la web publicada ni iniciar sesión.
+Aplicación local `com.resound.frequencies`, versión 0.2.1 (código 3), Android 8.0 o posterior. El APK incorpora los archivos de `dist/`; no necesita la web publicada ni iniciar sesión. Esta actualización añade explicaciones junto a los controles y conserva la firma de 0.2.0 para actualizar la instalación existente.
 
 ## Comportamiento nativo
 
@@ -20,7 +20,7 @@ Se necesitan Java 17, Android API 35, Android Build Tools 35, Python 3 y ZIP. No
 export RESOUND_BUILD_TOOLS=/ruta/android-sdk/build-tools/35.0.0
 export RESOUND_ANDROID_JAR=/ruta/android-sdk/platforms/android-35/android.jar
 export RESOUND_JAVAC=/ruta/jdk/bin/javac
-scripts/build-android.sh /ruta/salida/REsound-Binaural-0.2.0.apk
+scripts/build-android.sh /ruta/salida/REsound-Binaural-0.2.1.apk
 ```
 
 Sin clave de firma, el script produce `android/build/aligned.apk`, que todavía no es el APK instalable final. Para firmarlo, proporciona `RESOUND_KEYSTORE`, `RESOUND_KEYSTORE_PASSWORD` y, si corresponde, `RESOUND_KEY_ALIAS` y `RESOUND_KEY_PASSWORD` mediante el entorno. El alias predeterminado es `resound`; la contraseña de clave utiliza la contraseña del almacén si no se proporciona por separado. El script pasa las contraseñas a `apksigner` por referencia al entorno, sin imprimirlas ni ponerlas en sus argumentos.

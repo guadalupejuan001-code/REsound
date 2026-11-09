@@ -9,7 +9,7 @@ RESOUND_BUILD_TOOLS="${RESOUND_BUILD_TOOLS:-${RESOUND_SDK:+$RESOUND_SDK/build-to
 RESOUND_ANDROID_JAR="${RESOUND_ANDROID_JAR:-${RESOUND_SDK:+$RESOUND_SDK/platforms/android-35/android.jar}}"
 RESOUND_JAVAC="${RESOUND_JAVAC:-${JAVA_HOME:+$JAVA_HOME/bin/javac}}"
 RESOUND_JAVAC="${RESOUND_JAVAC:-$(command -v javac || true)}"
-RESOUND_OUTPUT="${1:-$RESOUND_PROJECT_ROOT/../outputs/REsound-Binaural-0.2.0.apk}"
+RESOUND_OUTPUT="${1:-$RESOUND_PROJECT_ROOT/../outputs/REsound-Binaural-0.2.1.apk}"
 RESOUND_BUILD="$RESOUND_PROJECT_ROOT/android/build"
 
 for tool in aapt2 d8 zipalign apksigner; do

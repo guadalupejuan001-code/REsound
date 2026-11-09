@@ -1,6 +1,22 @@
-# Verificación de REsound Binaural 0.2.0
+# Verificación de REsound Binaural 0.2.1
 
 Fecha: 9 de noviembre de 2026.
+
+## Actualización 0.2.1: explicaciones integradas
+
+La APK `REsound-Binaural-0.2.1.apk` tiene versión 0.2.1 y código 3, con el mismo paquete y certificado de firma que 0.2.0. El certificado coincidente permite actualizar la instalación anterior. Se verificaron firma v2/v3, alineación y coincidencia byte a byte entre los siete archivos web del APK y `dist/`.
+
+- Tamaño: 50 290 bytes.
+- SHA-256: `d86d5bf29f238a18fdc874179b13ed15c1a6022e8235b77635165a8efeab21df`.
+- `node --test tests/*.test.mjs`: 19/19 aprobadas.
+- `node --check dist/app.mjs` y `git diff --check`: aprobados.
+- 43 IDs HTML únicos; se conservaron los 36 originales y las referencias de ayuda apuntan a elementos existentes.
+
+En Chrome se verificó la explicación dinámica para base 200 y diferencias +10, 0 y −10: R 210, R 200 y R 190 respectivamente. La diferencia cero indica expresamente que sigue habiendo sonido. Se abrió la guía inicial, se comprobaron las ayudas de canal/fase/nivel en tonos libres y se seleccionó multiplicación de 200/210: el espectro mostró 10 y 410 Hz y el texto explicó el cambio.
+
+La disposición actual pasó la página de QA a 320 y 360 px sin desbordamiento horizontal. Se inspeccionó también la guía abierta a 320 px; el ejemplo L/R y las explicaciones se mantienen legibles. La página temporal de QA quedó fuera del APK.
+
+Esta actualización cambia explicaciones, presentación y número de versión. No modifica el motor de audio ni el contenedor nativo. No se repitió la ejecución nativa en el emulador bloqueado descrito abajo; no se ha probado esta APK en un teléfono físico. Las pruebas de Chrome no se presentan como pruebas de Android.
 
 ## APK Android 0.2.0
 

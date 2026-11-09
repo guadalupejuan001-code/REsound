@@ -1,10 +1,10 @@
 # REsound · Binaural
 
-Una herramienta de la línea de productos **REsound** para crear pruebas de audio binaural, experimentar con tonos y observar sus combinaciones. La versión 0.2.0 incorpora una APK Android autónoma y una interfaz sencilla de **tono base + diferencia entre oídos**. Funciona sin conexión y conserva las pruebas en el dispositivo.
+Una herramienta de la línea de productos **REsound** para crear pruebas de audio binaural, experimentar con tonos y observar sus combinaciones. La versión 0.2.1 incorpora una APK Android autónoma, explicaciones dentro de la interfaz y controles de **tono base + diferencia entre oídos**. Funciona sin conexión y conserva las pruebas en el dispositivo.
 
 ## Android
 
-La APK se llama `REsound-Binaural-0.2.0.apk`, con paquete `com.resound.frequencies`. Requiere Android 8.0 o posterior y un Android System WebView actualizado. Todo el código de la interfaz está incorporado en la APK; no necesita iniciar sesión ni abrir una web.
+La APK se llama `REsound-Binaural-0.2.1.apk`, con paquete `com.resound.frequencies`. Requiere Android 8.0 o posterior y un Android System WebView actualizado. Todo el código de la interfaz está incorporado en la APK; no necesita iniciar sesión ni abrir una web. Conserva la firma de 0.2.0 para instalar como actualización y mantener los datos de la app.
 
 1. Conecta auriculares estéreo.
 2. Escribe el **tono base**, que se envía al oído izquierdo, y la **diferencia**, que se añade para obtener el tono derecho. Por ejemplo, 200 y 10 producen L 200 Hz / R 210 Hz.
@@ -16,6 +16,24 @@ La APK se llama `REsound-Binaural-0.2.0.apk`, con paquete `com.resound.frequenci
 La pantalla permanece encendida durante la prueba. Salir de la aplicación, bloquear el teléfono, perder el foco de audio o desconectar auriculares detiene la reproducción. No hay reproducción en segundo plano en esta versión.
 
 Consulta [android/README.md](android/README.md) para compilar y firmar la APK. Las claves de firma se conservan fuera del repositorio.
+
+## Entender los controles
+
+**Hz** significa ciclos por segundo: 200 Hz describe una señal que repite su ciclo 200 veces por segundo. La frecuencia determina lo grave o agudo del tono; el volumen es otro control.
+
+En el modo binaural, el oído izquierdo recibe la base y el derecho recibe `base + diferencia`:
+
+| Base | Diferencia escrita | Izquierdo L | Derecho R | Lectura |
+| --- | --- | --- | --- | --- |
+| 200 Hz | 10 Hz | 200 Hz | 210 Hz | Derecho 10 Hz más agudo. |
+| 200 Hz | 0 Hz | 200 Hz | 200 Hz | Mismo tono en ambos; no es silencio. |
+| 200 Hz | −10 Hz | 200 Hz | 190 Hz | Derecho 10 Hz más grave; separación de 10 Hz. |
+
+Con auriculares y dos tonos cercanos separados puede percibirse una pulsación relacionada con la diferencia. En 200/210, el generador envía dos tonos y no añade un tercer tono de 10 Hz. La distinción entre percepción binaural y componente espectral está descrita en [Orozco Perez, Dumas y Lehmann, eNeuro 2020](https://pmc.ncbi.nlm.nih.gov/articles/PMC7082494/). La app no mide actividad cerebral ni determina si los hemisferios están sincronizados.
+
+La pantalla muestra el cálculo con los valores actuales, explica qué cambia cada control y ofrece una guía desplegable cerca del inicio. Las ayudas de gráficas distinguen tiempo, amplitud, frecuencias presentes y número de frecuencias distintas; las de tonos libres explican canal, fase y nivel. El texto se adapta a diferencia cero, negativa y canales a 0 Hz. Los valores incompletos señalan que la gráfica conserva la última configuración válida.
+
+Para comparar pruebas, mantén la base y el volumen y cambia una sola variable. **Mis pruebas** guarda los parámetros y lo que observaste; esas notas son observaciones personales, no mediciones del cerebro.
 
 ## Navegador
 

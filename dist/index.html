@@ -31,6 +31,28 @@
         <li><span aria-hidden="true">3</span> Reproduce</li>
       </ol>
 
+      <details class="learn-panel panel">
+        <summary><span><strong>Cómo usar esta herramienta</strong><span class="summary-caption">Empieza aquí: Hz, oídos y gráficas</span></span></summary>
+        <div class="learn-content">
+          <h2>Primero, entiende los números</h2>
+          <p><strong>Hz significa vibraciones por segundo.</strong> Un tono de 200 Hz repite su onda 200 veces en un segundo. Al aumentar los Hz, el tono se hace más agudo; al bajarlos, más grave.</p>
+          <div class="ear-example" aria-label="Ejemplo: 200 Hz en el oído izquierdo y 210 Hz en el derecho">
+            <div class="ear-example-card ear-example-left"><span>Oído izquierdo · L</span><strong>200 <small>Hz</small></strong><span>Tu tono base</span></div>
+            <div class="ear-example-card ear-example-right"><span>Oído derecho · R</span><strong>210 <small>Hz</small></strong><span>Base + diferencia</span></div>
+            <p class="ear-example-equation">200 + <strong>10</strong> = 210 Hz <span>La diferencia entre los oídos es 10 Hz.</span></p>
+          </div>
+          <p>En este ejemplo se envían <strong>dos tonos: 200 y 210 Hz</strong>. Los 10 Hz indican cuánto se separan; no son un tercer tono que la app añada a los auriculares.</p>
+          <h2>Haz una prueba que puedas comparar</h2>
+          <ol class="learn-steps">
+            <li><strong>Conecta auriculares estéreo.</strong> Cada lado debe recibir su propio canal L/R. El ajuste de audio mono del teléfono mezcla ambos canales.</li>
+            <li><strong>Elige base y diferencia.</strong> Puedes empezar por el ejemplo 200 y 10 para entender los controles. Mira el resultado L/R antes de reproducir.</li>
+            <li><strong>Usa volumen bajo y una duración.</strong> Pulsa Reproducir; Detener está siempre en la barra inferior.</li>
+            <li><strong>Cambia una sola cosa.</strong> Por ejemplo, conserva la base y el volumen y cambia la diferencia. En Mis pruebas, anota qué valores usaste y qué percibiste.</li>
+          </ol>
+          <p class="help-boundary">Estás configurando señales de audio. La app no mide actividad cerebral ni confirma que dos hemisferios se hayan sincronizado.</p>
+        </div>
+      </details>
+
       <div class="experiment-grid">
         <div class="controls-stack">
           <section class="editor-panel panel" aria-labelledby="tones-heading">
@@ -38,18 +60,33 @@
               <div><h2 id="tones-heading">Configura tu prueba</h2></div>
             </div>
             <label class="field experiment-style-field" for="experiment-style"><span>¿Cómo quieres experimentar?</span>
-              <select id="experiment-style">
+              <select id="experiment-style" aria-describedby="experiment-explanation">
                 <option value="binaural" selected>Binaural · ajustar la diferencia</option>
                 <option value="free">Tonos libres · ajustar cada oído</option>
               </select>
             </label>
+            <p id="experiment-explanation" class="field-help mode-context" aria-live="polite">Binaural crea dos tonos continuos: uno en el oído izquierdo y otro en el derecho.</p>
             <div id="binaural-controls" class="binaural-controls">
               <div class="binaural-grid">
-                <label class="field binaural-value" for="base-frequency"><span>Tono base · Hz</span><input id="base-frequency" type="number" min="0" step="any" inputmode="decimal" value="200"></label>
-                <label class="field binaural-value" for="beat-frequency"><span>Diferencia entre oídos · Hz</span><input id="beat-frequency" type="number" step="any" inputmode="decimal" value="10"></label>
+                <div class="binaural-field">
+                  <label class="field binaural-value" for="base-frequency"><span>Tono base · Hz</span><input id="base-frequency" type="number" min="0" step="any" inputmode="decimal" value="200" aria-describedby="base-help"></label>
+                  <p id="base-help" class="control-caption">Vibraciones por segundo del tono izquierdo (L).</p>
+                </div>
+                <div class="binaural-field">
+                  <label class="field binaural-value" for="beat-frequency"><span>Diferencia entre oídos · Hz</span><input id="beat-frequency" type="number" step="any" inputmode="decimal" value="10" aria-describedby="difference-help"></label>
+                  <p id="difference-help" class="control-caption">Se añade a la base para obtener el tono derecho (R).</p>
+                </div>
               </div>
               <output id="binaural-result" class="binaural-result" for="base-frequency beat-frequency" aria-live="polite">L 200 Hz · R 210 Hz</output>
-              <p class="field-help channel-help">L es tu oído izquierdo. R es tu oído derecho.</p>
+              <p id="binaural-explanation" class="calculation-help" aria-live="polite">200 Hz de base + 10 Hz de diferencia = 210 Hz en el oído derecho.</p>
+              <details class="context-help">
+                <summary>¿Qué cambia al mover la diferencia?</summary>
+                <div class="help-content">
+                  <p><strong>La base se mantiene en el oído izquierdo.</strong> Cambiar la diferencia mueve el tono del oído derecho respecto al izquierdo.</p>
+                  <p>Con diferencia <strong>0</strong>, ambos reciben la misma frecuencia. Con <strong>+10</strong>, el derecho recibe 10 Hz más; con <strong>−10</strong>, recibe 10 Hz menos. El resultado derecho no puede ser negativo; 0 Hz deja ese canal sin tono.</p>
+                  <p>Con auriculares y dos tonos cercanos, puedes percibir una sensación de pulso asociada a esa diferencia. Esa sensación no añade un tercer tono al espectro ni garantiza un estado cerebral concreto.</p>
+                </div>
+              </details>
             </div>
             <div id="free-tone-controls" hidden>
             <label class="field preset-field" for="preset-select"><span>Empezar con…</span>
@@ -65,8 +102,8 @@
               <summary><span>Ajustes de sonido</span><span class="summary-hint">Mezcla y más tonos</span></summary>
               <div class="settings-content">
                 <label class="field" for="mode"><span>Cómo combinarlos</span>
-                  <select id="mode">
-                    <option value="stereo" selected>Un tono por oído · L / R</option>
+                  <select id="mode" aria-describedby="mode-description">
+                    <option value="stereo" selected>Separar por oído · L / R</option>
                     <option value="sum">Sumar y escuchar en ambos</option>
                     <option value="multiply">Multiplicar L × R</option>
                   </select>
@@ -83,10 +120,11 @@
             <div class="listening-settings">
               <label class="volume-field" for="master-volume">
                 <span class="label-line"><span>Volumen</span><output id="master-value" for="master-volume">8%</output></span>
-                <input id="master-volume" type="range" min="0" max="1" step="0.01" value="0.08">
+                <input id="master-volume" type="range" min="0" max="1" step="0.01" value="0.08" aria-describedby="volume-help">
               </label>
+              <p id="volume-help" class="field-help setting-help">Es la ganancia de la señal, no una medida en decibelios. El volumen del teléfono también influye.</p>
               <label class="field timer-field" for="duration"><span>¿Durante cuánto tiempo?</span>
-                <select id="duration">
+                <select id="duration" aria-describedby="duration-help">
                   <option value="30">30 segundos</option>
                   <option value="60" selected>1 minuto</option>
                   <option value="180">3 minutos</option>
@@ -97,6 +135,7 @@
                   <option value="0">Hasta que yo lo detenga</option>
                 </select>
               </label>
+              <p id="duration-help" class="field-help setting-help">Cuenta desde Reproducir y detiene el audio al terminar. Salir de la app o bloquear el teléfono también lo detiene.</p>
             </div>
             <p class="listening-note">Empieza con volumen bajo. Los auriculares mantienen separados los canales L y R.</p>
           </section>
@@ -105,9 +144,9 @@
         <div class="analysis-stack">
           <section class="panel graph-panel" aria-labelledby="wave-heading">
             <div class="section-heading graph-heading">
-              <div><h2 id="wave-heading">Así se ve tu sonido</h2><p class="section-description">La onda cambia junto con tus tonos.</p></div>
+              <div><h2 id="wave-heading">Así se ve tu sonido</h2><p class="section-description">Tiempo en horizontal. Amplitud en vertical.</p></div>
               <label class="window-field" for="time-window"><span class="sr-only">Ventana de tiempo</span>
-                <select id="time-window" aria-label="Ventana de tiempo">
+                <select id="time-window" aria-label="Ventana de tiempo" aria-describedby="window-help">
                   <option value="0.02">20 ms</option>
                   <option value="0.1" selected>100 ms</option>
                   <option value="0.5">500 ms</option>
@@ -117,7 +156,15 @@
             </div>
             <div class="chart-legend"><span><i class="legend-line left-line" aria-hidden="true"></i>Izquierda · L</span><span><i class="legend-line right-line" aria-hidden="true"></i>Derecha · R</span></div>
             <div class="canvas-wrap"><canvas id="waveform" role="img" aria-label="Amplitud de las señales izquierda y derecha en el tiempo">La descripción de las frecuencias aparece debajo de la gráfica siguiente.</canvas></div>
+            <p id="window-help" class="field-help">La ventana cambia cuánto tiempo ves; no cambia el sonido.</p>
             <p id="beat-info" class="beat-info" aria-live="polite">Diferencia entre tonos: 10 Hz</p>
+            <details class="context-help">
+              <summary>Cómo leer las ondas</summary>
+              <div class="help-content">
+                <p><strong>De izquierda a derecha pasa el tiempo.</strong> 100 ms son una décima de segundo. Elige una ventana corta para ver más detalle, o una larga para ver más ciclos.</p>
+                <p><strong>La altura es la amplitud de la señal.</strong> Las curvas muestran los canales L y R antes del volumen general. Que se crucen en el dibujo no significa que se mezclen entre tus oídos.</p>
+              </div>
+            </details>
           </section>
 
           <section class="panel graph-panel" aria-labelledby="spectrum-heading">
@@ -127,6 +174,14 @@
             </div>
             <div class="canvas-wrap spectrum-wrap"><canvas id="spectrum" role="img" aria-label="Frecuencias y amplitudes presentes en la señal generada">La lista de frecuencias aparece debajo de la gráfica.</canvas></div>
             <div id="frequency-list" class="frequency-list" aria-label="Componentes espectrales"></div>
+            <details class="context-help">
+              <summary>Qué significa el número de frecuencias</summary>
+              <div class="help-content">
+                <p><strong>Cada posición horizontal corresponde a una frecuencia en Hz.</strong> La altura de su línea indica la amplitud calculada. El color identifica el canal.</p>
+                <p>El contador reúne las frecuencias distintas de la salida. <strong>200 Hz en L y 210 Hz en R cuentan como dos.</strong> Si ambos reciben 200 Hz, cuenta una frecuencia presente en dos canales.</p>
+                <p>La diferencia entre los oídos no se suma automáticamente al contador. En el modo libre, sumar y multiplicar señales son operaciones diferentes: comprueba la explicación del modo y el espectro resultante.</p>
+              </div>
+            </details>
           </section>
         </div>
       </div>
@@ -134,6 +189,7 @@
       <details class="session-panel panel">
         <summary><span><span class="session-title">Mis pruebas</span><span class="summary-caption">Guarda tus tonos y lo que observas</span></span></summary>
         <div class="session-content">
+          <p class="session-help">Guarda los ajustes y tus notas para repetir una prueba. Exportar crea una copia JSON; Importar recupera esa copia. Cargar una prueba no empieza a reproducirla.</p>
           <div class="session-fields">
             <label class="field" for="session-name"><span>Nombre de la prueba</span><input id="session-name" type="text" maxlength="80" value="Mi prueba" autocomplete="off" placeholder="Por ejemplo: tonos de hoy"></label>
             <label class="field" for="session-notes"><span>¿Qué notaste? <span class="muted">· opcional</span></span><textarea id="session-notes" rows="3" maxlength="4000" placeholder="Anota lo que percibiste para compararlo después."></textarea></label>
