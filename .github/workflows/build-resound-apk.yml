@@ -1,0 +1,57 @@
+name: Build REsound APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - "dist/**"
+      - "scripts/build-android.sh"
+      - "package.json"
+      - ".github/workflows/build-resound-apk.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: JavaScript tests
+        run: npm test
+
+      - name: Ensure Android SDK 35
+        shell: bash
+        run: |
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Build aligned APK
+        shell: bash
+        env:
+          RESOUND_BUILD_TOOLS: ${{ env.ANDROID_SDK_ROOT }}/build-tools/35.0.0
+          RESOUND_ANDROID_JAR: ${{ env.ANDROID_SDK_ROOT }}/platforms/android-35/android.jar
+          RESOUND_JAVAC: ${{ env.JAVA_HOME }}/bin/javac
+        run: |
+          chmod +x scripts/build-android.sh
+          scripts/build-android.sh
+          cp android/build/aligned.apk REsound-0.3.0-aligned-unsigned.apk
+          sha256sum REsound-0.3.0-aligned-unsigned.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: resound-0.3.0-unsigned
+          path: REsound-0.3.0-aligned-unsigned.apk
+          if-no-files-found: error
+          retention-days: 14
