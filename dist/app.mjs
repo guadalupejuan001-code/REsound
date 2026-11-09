@@ -28,8 +28,83 @@ const engine = new AudioEngine(message => {
   $('elapsed').textContent = '00:00';
   setStatus(message);
 });
+const nativeAudio = Boolean(globalThis.REsoundAndroid?.startBackgroundAudio);
+let nativeRunning = false;
+let nativePaused = false;
+let nativeDirty = false;
+
+function nativeSpectrumJSON() {
+  const channel = parts => parts.map(({ frequency, cos, sin }) => ({ frequency, cos, sin }));
+  return JSON.stringify({ left: channel(analysis.left), right: channel(analysis.right) });
+}
+
+function nativePlaybackLabel() {
+  if (state.experimentStyle === 'binaural' && state.tones.length >= 2) {
+    return `L ${number(state.tones[0].frequency)} Hz · R ${number(state.tones[1].frequency)} Hz`;
+  }
+  const count = new Set([...analysis.left, ...analysis.right].map(part => part.frequency)).size;
+  return `${count} ${count === 1 ? 'frecuencia' : 'frecuencias'} · ${state.mode}`;
+}
+
+function startNativeAudio() {
+  if (!nativeAudio || !analysis) return false;
+  const ok = globalThis.REsoundAndroid.startBackgroundAudio(
+    nativeSpectrumJSON(), state.masterVolume, Math.round(state.duration), nativePlaybackLabel());
+  if (!ok) throw new Error('Android no pudo iniciar el servicio de audio.');
+  nativeRunning = true;
+  nativePaused = false;
+  nativeDirty = false;
+  document.body.classList.add('is-playing');
+  $('play-btn').disabled = true;
+  $('stop-btn').disabled = false;
+  $('play-label').textContent = 'Reproducir';
+  setStatus('Reproduciendo en segundo plano · puedes salir de REsound');
+  return true;
+}
+
+function stopNativeAudio(message = 'Detenido') {
+  try { globalThis.REsoundAndroid?.stopBackgroundAudio(); } catch {}
+  nativeRunning = false;
+  nativePaused = false;
+  nativeDirty = false;
+  document.body.classList.remove('is-playing');
+  $('play-btn').disabled = false;
+  $('stop-btn').disabled = true;
+  $('play-label').textContent = 'Reproducir';
+  $('elapsed').textContent = '00:00';
+  setStatus(message);
+}
+
+function syncNativeState() {
+  if (!nativeAudio) return null;
+  try {
+    const raw = globalThis.REsoundAndroid.getPlaybackState();
+    const playback = raw ? JSON.parse(raw) : {};
+    nativeRunning = Boolean(playback.running);
+    nativePaused = Boolean(playback.paused);
+    const elapsed = Math.max(0, Math.floor(Number(playback.elapsed) || 0));
+    $('elapsed').textContent = `${String(Math.floor(elapsed / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
+    $('stop-btn').disabled = !nativeRunning;
+    $('play-btn').disabled = starting || (nativeRunning && !nativePaused);
+    $('play-label').textContent = nativePaused ? 'Reanudar' : 'Reproducir';
+    document.body.classList.toggle('is-playing', nativeRunning && !nativePaused);
+    document.body.classList.toggle('is-paused', nativePaused);
+    if (nativeRunning) {
+      setStatus(nativePaused
+        ? 'En pausa · reanuda aquí o desde la notificación'
+        : 'Reproduciendo en segundo plano · puedes salir de REsound');
+    }
+    return playback;
+  } catch {
+    return null;
+  }
+}
+
 // Only the trusted packaged Android Activity uses this lifecycle endpoint.
-globalThis.REsoundApp = Object.freeze({ stop: message => engine.stop(message || 'Detenido') });
+// Activity/WebView lifecycle stops browser audio only; native foreground playback owns Android audio.
+globalThis.REsoundApp = Object.freeze({ stop: message => {
+  if (!nativeAudio) engine.stop(message || 'Detenido');
+} });
 
 function setStatus(message, error = false) {
   $('status').textContent = message;
@@ -231,7 +306,7 @@ function updateAnalysis(updateAudio = true) {
       state.mode = 'stereo';
       $('binaural-result').textContent = `L ${number(state.tones[0].frequency)} Hz · R ${number(state.tones[1].frequency)} Hz`;
     } catch (error) {
-      engine.stop(); $('play-btn').disabled = true;
+      if (!nativeAudio) engine.stop(); $('play-btn').disabled = true;
       $('binaural-result').textContent = 'Completa el tono base y la diferencia.';
       $('binaural-explanation').textContent = 'La app necesita dos resultados válidos: izquierdo = base; derecho = base + diferencia. Ninguno puede ser negativo.';
       $('experiment-explanation').textContent = 'Las gráficas conservan la última configuración válida hasta que completes estos valores.';
@@ -241,7 +316,7 @@ function updateAnalysis(updateAudio = true) {
   }
   const validation = validate(state);
   if (!validation.ok) {
-    engine.stop();
+    if (!nativeAudio) engine.stop();
     $('play-btn').disabled = true;
     setStatus(validation.errors.map(error => error.message).join(' '), true);
     $('spectrum-summary').textContent = 'Revisa los valores';
@@ -270,12 +345,20 @@ function updateAnalysis(updateAudio = true) {
   }
   frequencyList(); draw(); persist();
   let audioError = false;
-  if (updateAudio && engine.running) {
+  if (updateAudio && nativeAudio && nativeRunning) {
+    if (nativePaused) {
+      nativeDirty = true;
+    } else {
+      try { startNativeAudio(); }
+      catch (error) { audioError = true; setStatus(error.message, true); }
+    }
+  } else if (updateAudio && engine.running) {
     try { engine.update(state); }
     catch (error) { audioError = true; setStatus(error.message, true); }
   }
-  $('play-btn').disabled = engine.running || starting || !count;
-  if (!engine.running && !starting && !audioError) setStatus(count ? 'Listo para escuchar' : 'Silencio: revisa los tonos y el modo.');
+  $('play-btn').disabled = starting || !count || (nativeAudio ? (nativeRunning && !nativePaused) : engine.running);
+  $('stop-btn').disabled = nativeAudio ? !nativeRunning : !engine.running;
+  if (!engine.running && !nativeRunning && !starting && !audioError) setStatus(count ? 'Listo para escuchar' : 'Silencio: revisa los tonos y el modo.');
 }
 
 function queueUpdate() {
@@ -325,9 +408,22 @@ $('mode').addEventListener('change', event => { state.mode = event.target.value;
 $('master-volume').addEventListener('input', event => {
   state.masterVolume = Number(event.target.value);
   $('master-value').textContent = `${Math.round(state.masterVolume * 100)}%`;
-  engine.setVolume(state.masterVolume); persist();
+  if (nativeAudio && nativeRunning) {
+    try { globalThis.REsoundAndroid.setBackgroundVolume(state.masterVolume); } catch {}
+  } else {
+    engine.setVolume(state.masterVolume);
+  }
+  persist();
 });
-$('duration').addEventListener('change', event => { state.duration = Number(event.target.value); engine.setDuration(state.duration); persist(); });
+$('duration').addEventListener('change', event => {
+  state.duration = Number(event.target.value);
+  if (nativeAudio && nativeRunning) {
+    try { globalThis.REsoundAndroid.setBackgroundDuration(Math.round(state.duration)); } catch {}
+  } else {
+    engine.setDuration(state.duration);
+  }
+  persist();
+});
 $('time-window').addEventListener('change', event => { state.timeWindow = Number(event.target.value); draw(); persist(); });
 $('preset-select').addEventListener('change', event => {
   const pair = { binaural: [200, 210], unison: [220, 220], fifth: [220, 330] }[event.target.value];
@@ -338,27 +434,66 @@ $('preset-select').addEventListener('change', event => {
 
 $('play-btn').addEventListener('click', async () => {
   clearTimeout(changeTimer);
-  if (starting || engine.running) return;
+  if (starting || engine.running || (nativeRunning && !nativePaused)) return;
   updateAnalysis(false);
-  if ($('play-btn').disabled) return;
+  if (!analysis) return;
   starting = true; $('play-btn').disabled = true; $('stop-btn').disabled = false;
-  setStatus('Iniciando audio…');
+  setStatus(nativePaused ? 'Reanudando…' : 'Iniciando audio…');
   try {
-    if (globalThis.REsoundAndroid && !globalThis.REsoundAndroid.requestAudioFocus()) throw new Error('Android no pudo iniciar el audio. Vuelve a pulsar Reproducir.');
-    await engine.start(state, state.masterVolume, state.duration);
-    if (engine.running) setStatus(state.experimentStyle === 'binaural' ? 'Reproduciendo · L/R separados' : 'Reproduciendo');
-  } catch (error) { engine.stop(); setStatus(error.message, true); }
-  finally { starting = false; $('play-btn').disabled = engine.running; $('stop-btn').disabled = !engine.running; }
+    if (nativeAudio) {
+      if (nativePaused && !nativeDirty) {
+        globalThis.REsoundAndroid.resumeBackgroundAudio();
+        nativePaused = false;
+        nativeRunning = true;
+        document.body.classList.add('is-playing');
+        document.body.classList.remove('is-paused');
+        setStatus('Reproduciendo en segundo plano · puedes salir de REsound');
+      } else {
+        startNativeAudio();
+      }
+    } else {
+      await engine.start(state, state.masterVolume, state.duration);
+      if (engine.running) setStatus(state.experimentStyle === 'binaural' ? 'Reproduciendo · L/R separados' : 'Reproduciendo');
+    }
+  } catch (error) {
+    if (nativeAudio) stopNativeAudio('No se pudo iniciar');
+    else engine.stop();
+    setStatus(error.message, true);
+  } finally {
+    starting = false;
+    if (nativeAudio) syncNativeState();
+    else {
+      $('play-btn').disabled = engine.running;
+      $('stop-btn').disabled = !engine.running;
+    }
+  }
 });
-$('stop-btn').addEventListener('click', () => engine.stop());
+$('stop-btn').addEventListener('click', () => {
+  if (nativeAudio) stopNativeAudio();
+  else engine.stop();
+});
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape') engine.stop();
+  if (event.key === 'Escape') {
+    if (nativeAudio) stopNativeAudio();
+    else engine.stop();
+  }
 });
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && (engine.running || engine.starting)) engine.stop('Detenido al salir de la herramienta.');
+  if (!nativeAudio && document.hidden && (engine.running || engine.starting)) engine.stop('Detenido al salir de la herramienta.');
 });
-globalThis.addEventListener('pagehide', () => engine.stop());
+globalThis.addEventListener('pagehide', () => {
+  if (!nativeAudio) engine.stop();
+});
 setInterval(() => {
+  if (nativeAudio) {
+    const wasRunning = nativeRunning;
+    const playback = syncNativeState();
+    if (wasRunning && playback && !playback.running) {
+      nativeDirty = false;
+      setStatus('Sesión terminada');
+    }
+    return;
+  }
   if (!engine.running) return;
   const elapsed = Math.floor(engine.elapsed());
   $('elapsed').textContent = `${String(Math.floor(elapsed / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
@@ -463,3 +598,7 @@ graphHint = document.createElement('p'); graphHint.className = 'field-help';
 $('waveform').parentElement.after(graphHint);
 new ResizeObserver(() => draw()).observe($('waveform').parentElement);
 renderControls(); renderSessions(); updateAnalysis(false);
+if (nativeAudio) {
+  document.body.classList.add('native-background-audio');
+  syncNativeState();
+}
