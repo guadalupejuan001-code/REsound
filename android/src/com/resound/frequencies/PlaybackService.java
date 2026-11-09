@@ -407,7 +407,7 @@ public final class PlaybackService extends Service {
             .setShowWhen(false)
             .setCategory(Notification.CATEGORY_SERVICE)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
-            .setOngoing(!isPaused)
+            .setOngoing(true)
             .addAction(new Notification.Action.Builder(
                 isPaused ? android.R.drawable.ic_media_play : android.R.drawable.ic_media_pause,
                 isPaused ? "Reanudar" : "Pausar", toggleIntent).build())
