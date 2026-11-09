@@ -14,17 +14,36 @@
   <div class="app-shell">
     <header class="app-header">
       <div class="brand" aria-label="REsound">
-        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
-        <span><strong>RE</strong>sound</span>
+        <span class="brand-emblem" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i>
+        </span>
+        <span class="brand-copy"><strong>REsound</strong><small>experimental audio lab</small></span>
       </div>
-      <span class="header-note">BINAURAL</span>
+      <span class="header-note live-chip"><i aria-hidden="true"></i> LAB 0.3</span>
     </header>
 
     <main id="experiment">
-      <div class="page-heading">
-        <h1>Binaural<span class="title-dot" aria-hidden="true">.</span></h1>
-        <p>Elige un tono. Cambia la diferencia. Escucha.</p>
+      <section class="hero-panel">
+        <div class="hero-copy">
+          <span class="hero-kicker">AUDIO ESTÉREO · L/R · EXPLORA</span>
+          <h1>Diseña lo que quieres <span>escuchar.</span></h1>
+          <p>Cambia una variable, escucha la diferencia y guarda lo que descubras.</p>
+          <div class="hero-tags" aria-label="Funciones principales">
+            <span>◉ Binaural</span><span>⌁ Tonos libres</span><span>≈ Espectro</span>
+          </div>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="sound-orb"><i></i><i></i><i></i></div>
+          <span class="ear-dot ear-left">L</span>
+          <span class="ear-dot ear-right">R</span>
+        </div>
+      </section>
+
+      <div class="background-ready" id="background-ready">
+        <span class="background-icon" aria-hidden="true">▶</span>
+        <span><strong>Segundo plano listo</strong><small>Puedes salir de REsound o apagar la pantalla y el audio continuará.</small></span>
       </div>
+
       <ol class="quick-guide" aria-label="Cómo empezar">
         <li><span aria-hidden="true">1</span> Auriculares</li>
         <li><span aria-hidden="true">2</span> Elige tonos</li>
@@ -57,7 +76,7 @@
         <div class="controls-stack">
           <section class="editor-panel panel" aria-labelledby="tones-heading">
             <div class="section-heading">
-              <div><h2 id="tones-heading">Configura tu prueba</h2></div>
+              <div class="section-title"><span class="section-icon" aria-hidden="true">⌁</span><div><h2 id="tones-heading">Configura tu prueba</h2><p>Define el estímulo que vas a escuchar.</p></div></div>
             </div>
             <label class="field experiment-style-field" for="experiment-style"><span>¿Cómo quieres experimentar?</span>
               <select id="experiment-style" aria-describedby="experiment-explanation">
@@ -116,7 +135,7 @@
           </section>
 
           <section class="listening-panel panel" aria-labelledby="listening-heading">
-            <div class="section-heading"><h2 id="listening-heading">A tu ritmo</h2></div>
+            <div class="section-heading"><div class="section-title"><span class="section-icon" aria-hidden="true">◴</span><div><h2 id="listening-heading">A tu ritmo</h2><p>Volumen y tiempo de la sesión.</p></div></div></div>
             <div class="listening-settings">
               <label class="volume-field" for="master-volume">
                 <span class="label-line"><span>Volumen</span><output id="master-value" for="master-volume">8%</output></span>
@@ -135,16 +154,16 @@
                   <option value="0">Hasta que yo lo detenga</option>
                 </select>
               </label>
-              <p id="duration-help" class="field-help setting-help">Cuenta desde Reproducir y detiene el audio al terminar. Salir de la app o bloquear el teléfono también lo detiene.</p>
+              <p id="duration-help" class="field-help setting-help">Cuenta desde Reproducir y detiene el audio al terminar. En Android, si cierras la interfaz o apagas la pantalla, la reproducción continúa desde el servicio de audio. Deténla desde REsound o su notificación.</p>
             </div>
-            <p class="listening-note">Empieza con volumen bajo. Los auriculares mantienen separados los canales L y R.</p>
+            <p class="listening-note">Empieza con volumen bajo. Los auriculares mantienen separados los canales L y R. En Android, el audio puede continuar en segundo plano.</p>
           </section>
         </div>
 
         <div class="analysis-stack">
           <section class="panel graph-panel" aria-labelledby="wave-heading">
             <div class="section-heading graph-heading">
-              <div><h2 id="wave-heading">Así se ve tu sonido</h2><p class="section-description">Tiempo en horizontal. Amplitud en vertical.</p></div>
+              <div class="section-title"><span class="section-icon" aria-hidden="true">≈</span><div><h2 id="wave-heading">Así se ve tu sonido</h2><p class="section-description">Tiempo en horizontal. Amplitud en vertical.</p></div></div>
               <label class="window-field" for="time-window"><span class="sr-only">Ventana de tiempo</span>
                 <select id="time-window" aria-label="Ventana de tiempo" aria-describedby="window-help">
                   <option value="0.02">20 ms</option>
@@ -169,7 +188,7 @@
 
           <section class="panel graph-panel" aria-labelledby="spectrum-heading">
             <div class="section-heading spectrum-heading">
-              <div><h2 id="spectrum-heading">Qué frecuencias salen</h2><p class="graph-subtitle">Espectro ideal calculado</p></div>
+              <div class="section-title"><span class="section-icon" aria-hidden="true">∿</span><div><h2 id="spectrum-heading">Qué frecuencias salen</h2><p class="graph-subtitle">Espectro ideal calculado</p></div></div>
               <div id="spectrum-summary" class="spectrum-summary" aria-live="polite">2 frecuencias</div>
             </div>
             <div class="canvas-wrap spectrum-wrap"><canvas id="spectrum" role="img" aria-label="Frecuencias y amplitudes presentes en la señal generada">La lista de frecuencias aparece debajo de la gráfica.</canvas></div>
@@ -187,7 +206,7 @@
       </div>
 
       <details class="session-panel panel">
-        <summary><span><span class="session-title">Mis pruebas</span><span class="summary-caption">Guarda tus tonos y lo que observas</span></span></summary>
+        <summary><span><span class="session-title"><span class="inline-icon" aria-hidden="true">▣</span> Mis pruebas</span><span class="summary-caption">Guarda tus tonos y lo que observas</span></span></summary>
         <div class="session-content">
           <p class="session-help">Guarda los ajustes y tus notas para repetir una prueba. Exportar crea una copia JSON; Importar recupera esa copia. Cargar una prueba no empieza a reproducirla.</p>
           <div class="session-fields">
@@ -214,8 +233,8 @@
       <span id="elapsed" class="elapsed" aria-label="Tiempo transcurrido">00:00</span>
     </div>
     <div class="transport-buttons">
-      <button id="play-btn" class="button button-primary" type="button"><span aria-hidden="true">▶</span> Reproducir</button>
-      <button id="stop-btn" class="button button-secondary" type="button" disabled><span aria-hidden="true">■</span> Detener</button>
+      <button id="play-btn" class="button button-primary play-button" type="button"><span class="transport-icon" aria-hidden="true">▶</span><span id="play-label">Reproducir</span></button>
+      <button id="stop-btn" class="button button-secondary stop-button" type="button" disabled><span class="transport-icon" aria-hidden="true">■</span><span>Detener</span></button>
     </div>
   </section>
   <script type="module" src="./app.mjs"></script>
