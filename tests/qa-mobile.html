@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>REsound · QA móvil temporal</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui,sans-serif; color: #edf1f5; background: #101419; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 20px; }
+    h1 { margin: 0 0 10px; font-size: 22px; }
+    #mobile-summary { margin-bottom: 18px; white-space: pre-wrap; font-family: ui-monospace,monospace; font-size: 14px; line-height: 1.6; }
+    .viewports { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+    section { flex: none; }
+    h2 { margin: 0 0 10px; font-size: 16px; }
+    iframe { display: block; border: 0; height: 1600px; background: #101419; outline: 1px solid #445260; }
+    [data-result="pass"] { color: #b5ead6; }
+    [data-result="fail"] { color: #f2b4af; }
+  </style>
+</head>
+<body>
+  <h1>QA móvil · DOM real</h1>
+  <div id="mobile-summary" role="status" aria-live="polite">Esperando carga de los dos tamaños…</div>
+  <div class="viewports">
+    <section><h2>Viewport 360 px</h2><iframe id="mobile-360" title="REsound a 360 píxeles" src="../dist/index.html" width="360"></iframe></section>
+    <section><h2>Viewport 320 px</h2><iframe id="mobile-320" title="REsound a 320 píxeles" src="../dist/index.html" width="320"></iframe></section>
+  </div>
+  <script>
+    (() => {
+      const summary = document.getElementById('mobile-summary');
+      const results = new Map();
+      const widths = [360, 320];
+      function show() {
+        summary.replaceChildren();
+        for (const width of widths) {
+          const p = document.createElement('div');
+          const result = results.get(width);
+          if (!result) { p.textContent = `${width}px: esperando DOM listo`; }
+          else {
+            p.dataset.result = result.pass ? 'pass' : 'fail';
+            p.textContent = `${result.pass ? 'PASS' : 'FAIL'} ${width}px · innerWidth=${result.innerWidth}, clientWidth=${result.clientWidth}, scrollWidth=${result.scrollWidth} · ${result.controls} controles y ${result.canvases} canvas visibles · ${result.bad.length} fuera de ancho`;
+            if (result.bad.length) p.textContent += `\n  ${result.bad.join('; ')}`;
+            if (result.error) p.textContent += `\n  ${result.error}`;
+          }
+          summary.append(p);
+        }
+      }
+      function inspect(frame, expected, tries = 0) {
+        const doc = frame.contentDocument;
+        const win = frame.contentWindow;
+        if (!doc || !win || doc.readyState !== 'complete' || !doc.querySelector('#tone-list')?.children.length) {
+          if (tries < 120) { requestAnimationFrame(() => inspect(frame, expected, tries + 1)); return; }
+          results.set(expected, {pass:false, innerWidth:win?.innerWidth ?? 0, clientWidth:doc?.documentElement.clientWidth ?? 0, scrollWidth:doc?.documentElement.scrollWidth ?? 0, controls:0, canvases:0, bad:[], error:'La app no completó la carga de tonos tras 120 fotogramas.'});
+          show(); return;
+        }
+        const root = doc.documentElement;
+        const controls = [...doc.querySelectorAll('input,button,select,textarea')].filter(el => {
+          const rect = el.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0 && win.getComputedStyle(el).visibility !== 'hidden';
+        });
+        const canvases = [...doc.querySelectorAll('canvas')].filter(el => {
+          const rect = el.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0 && win.getComputedStyle(el).visibility !== 'hidden';
+        });
+        const bad = [];
+        for (const el of [...controls, ...canvases]) {
+          const rect = el.getBoundingClientRect();
+          if (rect.left < -0.5 || rect.right > root.clientWidth + 0.5) {
+            bad.push(`${el.id || el.name || el.tagName}: x=${rect.left.toFixed(1)}…${rect.right.toFixed(1)}`);
+          }
+        }
+        const pass = win.innerWidth === expected && root.scrollWidth <= root.clientWidth && bad.length === 0;
+        results.set(expected,{pass,innerWidth:win.innerWidth,clientWidth:root.clientWidth,scrollWidth:root.scrollWidth,controls:controls.length,canvases:canvases.length,bad});
+        show();
+      }
+      for (const width of widths) {
+        const frame = document.getElementById(`mobile-${width}`);
+        const schedule = () => requestAnimationFrame(() => requestAnimationFrame(() => inspect(frame,width)));
+        frame.addEventListener('load', schedule);
+        if (frame.contentDocument?.readyState === 'complete') schedule();
+      }
+      show();
+    })();
+  </script>
+</body>
+</html>

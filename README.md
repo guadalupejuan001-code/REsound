@@ -47,7 +47,7 @@ El análisis acepta frecuencias no negativas finitas representables en JavaScrip
 
 El control general empieza al 8%. Reabrir, importar o cargar una sesión restaura ese nivel inicial sin empezar a sonar. Este porcentaje es una ganancia digital, no una medida de presión acústica. El inicio, los cambios y la parada usan transiciones breves. El temporizador se programa también sobre el reloj de audio. Al ocultarse la página se detiene la reproducción.
 
-El guardado es local al navegador y al origen web. Exportar JSON permite conservar una copia y moverla a otro navegador. Las importaciones tienen un límite de 2 MB y 256 tonos para evitar bloquear el teléfono con archivos desproporcionados. No se recopilan notas ni se transmiten las sesiones.
+El guardado es local al navegador y al origen web. Exportar JSON permite conservar una copia y moverla a otro navegador. Las importaciones tienen un límite de 2 MB para archivos de configuración. El número de tonos utilizable depende de la capacidad del dispositivo. No se recopilan notas ni se transmiten las sesiones.
 
 ## Estructura y pruebas
 
