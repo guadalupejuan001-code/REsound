@@ -38,11 +38,10 @@ jobs:
 
       - name: Build aligned APK
         shell: bash
-        env:
-          RESOUND_BUILD_TOOLS: ${{ env.ANDROID_SDK_ROOT }}/build-tools/35.0.0
-          RESOUND_ANDROID_JAR: ${{ env.ANDROID_SDK_ROOT }}/platforms/android-35/android.jar
-          RESOUND_JAVAC: ${{ env.JAVA_HOME }}/bin/javac
         run: |
+          export RESOUND_BUILD_TOOLS="$ANDROID_SDK_ROOT/build-tools/35.0.0"
+          export RESOUND_ANDROID_JAR="$ANDROID_SDK_ROOT/platforms/android-35/android.jar"
+          export RESOUND_JAVAC="$JAVA_HOME/bin/javac"
           chmod +x scripts/build-android.sh
           scripts/build-android.sh
           cp android/build/aligned.apk REsound-0.3.0-aligned-unsigned.apk
