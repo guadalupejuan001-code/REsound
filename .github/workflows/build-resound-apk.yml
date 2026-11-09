@@ -45,12 +45,15 @@ jobs:
           chmod +x scripts/build-android.sh
           scripts/build-android.sh
           cp android/build/aligned.apk REsound-0.3.0-aligned-unsigned.apk
+          cp "$ANDROID_SDK_ROOT/build-tools/35.0.0/lib/apksigner.jar" apksigner.jar
           sha256sum REsound-0.3.0-aligned-unsigned.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: resound-0.3.0-unsigned
-          path: REsound-0.3.0-aligned-unsigned.apk
+          path: |
+            REsound-0.3.0-aligned-unsigned.apk
+            apksigner.jar
           if-no-files-found: error
           retention-days: 14
