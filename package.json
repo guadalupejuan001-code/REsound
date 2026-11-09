@@ -1,6 +1,6 @@
 {
   "name": "resound-frecuencias",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "REsound Binaural: experimentos con tonos L/R, Android y web",
