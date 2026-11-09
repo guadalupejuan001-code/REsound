@@ -1,3 +1,31 @@
+# Verificación de REsound 0.3.0
+
+Fecha: 9 de noviembre de 2026.
+
+## REsound 0.3.0 · interfaz y reproducción en segundo plano
+
+GitHub Actions ejecutó el workflow `Build REsound APK` sobre Android API 35 / Build Tools 35.0.0. El build final del código de 0.3.0 terminó correctamente.
+
+- `npm test`: **19/19 pruebas aprobadas**.
+- Compilación Java 17 / Android API 35: aprobada.
+- `aapt2`, `d8` y `zipalign`: aprobados por el script de compilación.
+- APK final: `REsound-0.3.0.apk`.
+- SHA-256 del APK final: `bae11255731e35b8bb44ac615bf349a1faa5fffd2c96b9aa12264da023e7e263`.
+- Firma: APK Signature Scheme **v2 y v3 verificadas**; RSA 4096 bits, un firmante.
+- Certificado SHA-256: `8c0a9b19b2fd01535edcd8a2b3a856e47830e77a4a749d69978de9a9f650e3b9`.
+
+La reproducción Android ya no depende del ciclo de vida del WebView. `PlaybackService` recibe las componentes espectrales calculadas por el motor de REsound y las renderiza como PCM estéreo a 48 kHz mediante `AudioTrack`. Está declarado como servicio en primer plano de tipo `mediaPlayback`, mantiene una notificación con Pausar/Reanudar/Detener, usa foco de audio y un wake lock parcial mientras reproduce.
+
+El cierre de la Activity, el cambio a otra aplicación, el apagado de pantalla y la retirada de la tarea de recientes no llaman a detener el servicio. Forzar la detención de la app desde Android sigue deteniendo el proceso, como corresponde al sistema operativo. La desconexión de auriculares pausa el audio para evitar que el estímulo pase accidentalmente al altavoz.
+
+La interfaz 0.3 añade una cabecera y hero renovados, iconografía de secciones, señalización L/R, nuevo icono de launcher, indicador visible de segundo plano y controles de transporte más claros.
+
+### Alcance de esta verificación
+
+La validación confirma compilación, empaquetado, firma y las pruebas automáticas existentes. **No se instaló ni escuchó esta versión en un teléfono físico en este entorno**, por lo que el comportamiento del fabricante/OEM frente a ahorro extremo de batería sigue siendo una variable externa.
+
+---
+
 # Verificación de REsound Binaural 0.2.1
 
 Fecha: 9 de noviembre de 2026.
