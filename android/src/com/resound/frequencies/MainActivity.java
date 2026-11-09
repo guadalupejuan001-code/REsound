@@ -218,6 +218,65 @@ public final class MainActivity extends Activity {
             releaseAudioFocus();
         }
 
+        @JavascriptInterface public boolean startBackgroundAudio(
+                String spectrumJson, double volume, int durationSeconds, String label) {
+            try {
+                Intent intent = new Intent(MainActivity.this, PlaybackService.class);
+                intent.setAction(PlaybackService.ACTION_PLAY);
+                intent.putExtra(PlaybackService.EXTRA_SPECTRUM, spectrumJson);
+                intent.putExtra(PlaybackService.EXTRA_VOLUME, volume);
+                intent.putExtra(PlaybackService.EXTRA_DURATION, durationSeconds);
+                intent.putExtra(PlaybackService.EXTRA_LABEL, label);
+                if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent);
+                else startService(intent);
+                return true;
+            } catch (Exception ignored) {
+                return false;
+            }
+        }
+
+        @JavascriptInterface public void pauseBackgroundAudio() {
+            sendPlaybackAction(PlaybackService.ACTION_PAUSE);
+        }
+
+        @JavascriptInterface public void resumeBackgroundAudio() {
+            sendPlaybackAction(PlaybackService.ACTION_RESUME);
+        }
+
+        @JavascriptInterface public void stopBackgroundAudio() {
+            sendPlaybackAction(PlaybackService.ACTION_STOP);
+        }
+
+        @JavascriptInterface public void setBackgroundVolume(double volume) {
+            try {
+                Intent intent = new Intent(MainActivity.this, PlaybackService.class);
+                intent.setAction(PlaybackService.ACTION_VOLUME);
+                intent.putExtra(PlaybackService.EXTRA_VOLUME, volume);
+                startService(intent);
+            } catch (Exception ignored) {}
+        }
+
+        @JavascriptInterface public void setBackgroundDuration(int durationSeconds) {
+            try {
+                Intent intent = new Intent(MainActivity.this, PlaybackService.class);
+                intent.setAction(PlaybackService.ACTION_DURATION);
+                intent.putExtra(PlaybackService.EXTRA_DURATION, durationSeconds);
+                startService(intent);
+            } catch (Exception ignored) {}
+        }
+
+        @JavascriptInterface public String getPlaybackState() {
+            return PlaybackService.getPlaybackStateJson();
+        }
+
+        private void sendPlaybackAction(String action) {
+            try {
+                Intent intent = new Intent(MainActivity.this, PlaybackService.class);
+                intent.setAction(action);
+                startService(intent);
+            } catch (Exception ignored) {}
+        }
+
         @JavascriptInterface public void exportSession(String name, String json) {
             if (json == null || json.length() > MAX_SESSION_BYTES) {
                 exportResult(false, "La sesión supera el tamaño admitido."); return;
@@ -363,14 +422,14 @@ public final class MainActivity extends Activity {
 
     @Override protected void onPause() {
         resumed = false;
-        stopAudio("Audio detenido al salir de la aplicación");
+        // The WebView can pause with the Activity; native PlaybackService owns background audio.
         if (receiverRegistered) { unregisterReceiver(noisyReceiver); receiverRegistered = false; }
         if (webView != null) webView.onPause();
         super.onPause();
     }
 
     @Override public void onBackPressed() {
-        stopAudio("Detenido");
+        // Closing the UI must not stop a foreground audio experiment.
         super.onBackPressed();
     }
 
