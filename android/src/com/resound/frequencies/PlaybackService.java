@@ -482,27 +482,20 @@ public final class PlaybackService extends Service {
         double phaseSin = 0.0;
 
         Component(double frequency, double cosCoefficient, double sinCoefficient) {
+            this(cosCoefficient, sinCoefficient,
+                Math.cos(2.0 * Math.PI * frequency / SAMPLE_RATE),
+                Math.sin(2.0 * Math.PI * frequency / SAMPLE_RATE));
+        }
+
+        private Component(double cosCoefficient, double sinCoefficient, double stepCos, double stepSin) {
             this.cosCoefficient = cosCoefficient;
             this.sinCoefficient = sinCoefficient;
-            double step = 2.0 * Math.PI * frequency / SAMPLE_RATE;
-            this.stepCos = Math.cos(step);
-            this.stepSin = Math.sin(step);
+            this.stepCos = stepCos;
+            this.stepSin = stepSin;
         }
 
         Component copy() {
-            Component copy = new Component(0.0, cosCoefficient, sinCoefficient);
-            // Preserve the precomputed rotation instead of recomputing through frequency.
-            copy.phaseCos = 1.0;
-            copy.phaseSin = 0.0;
-            return new ComponentWithStep(cosCoefficient, sinCoefficient, stepCos, stepSin);
-        }
-    }
-
-    private static final class ComponentWithStep extends Component {
-        ComponentWithStep(double cosCoefficient, double sinCoefficient, double stepCos, double stepSin) {
-            super(0.0, cosCoefficient, sinCoefficient);
-            this.phaseCos = 1.0;
-            this.phaseSin = 0.0;
+            return new Component(cosCoefficient, sinCoefficient, stepCos, stepSin);
         }
     }
 }
