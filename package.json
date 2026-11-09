@@ -3,7 +3,7 @@
   "version": "0.3.0",
   "private": true,
   "type": "module",
-  "description": "REsound Binaural: experimentos con tonos L/R, Android y web",
+  "description": "REsound 0.3: laboratorio binaural L/R con reproducción Android en segundo plano",
   "scripts": {
     "test": "node --test tests/*.test.mjs"
   }
